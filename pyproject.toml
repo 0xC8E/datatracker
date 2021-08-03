@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "data-tracker"
+name = "datatracker"
 version = "0.1.0"
 description = ""
 authors = ["JC Coto <jc@fractalreef.com>"]
