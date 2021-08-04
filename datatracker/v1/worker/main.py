@@ -2,9 +2,9 @@ import asyncio
 import datetime
 
 from datatracker.v1.data import crypto_prices
-from datatracker.v1.data import datapoints
+from datatracker.v1.data import metrics
 
-SECONDS_DELAY = 60
+SECONDS_DELAY = 5
 
 
 def run():
@@ -16,14 +16,15 @@ def run():
 
 async def main_loop():
     print(f"Fetching and storing price at {datetime.datetime.now()}")
-    asyncio.create_task(fetch_and_store_price())
+    for metric in metrics.get_all_metrics():
+        asyncio.create_task(fetch_and_store_price(metric))
     await asyncio.sleep(SECONDS_DELAY)
     await main_loop()
 
 
-async def fetch_and_store_price():
-    price = await crypto_prices.get_current_price()
-    await datapoints.add_and_prune(price)
+async def fetch_and_store_price(metric):
+    price = await crypto_prices.get_current_price(metric)
+    await metrics.add_and_prune(metric, price)
 
 
 if __name__ == "__main__":
