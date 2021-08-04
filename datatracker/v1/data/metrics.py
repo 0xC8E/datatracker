@@ -1,4 +1,5 @@
 import datetime
+import statistics
 
 import aioredis
 
@@ -9,7 +10,7 @@ TEST_DB = 2
 DEFAULT_HOURS = 24
 
 RANGE_KEY = "dt:data_points"
-RANK_KEY = "dt:ranks"
+STDEVS_KEY = "dt:stdevs"
 
 METRICS = [
     ("Bitcoin in USD", "btcusd"),
@@ -31,20 +32,24 @@ def get_readable_name(metric):
     return metric[0].strip()
 
 
+def _get_range_key(metric_id):
+    return f"{RANGE_KEY}:{metric_id}"
+
+
+def _get_stdevs_key():
+    return STDEVS_KEY
+
+
 async def connect_for_testing_and_clear():
     print("Warning - Using test database in current process.")
     global connection
     connection = aioredis.from_url(REDIS_URL, db=TEST_DB)
+
     await connection.flushdb()
 
 
-def _get_key(metric):
-    metric_id = get_metric_id(metric)
-    return f"{RANGE_KEY}:{metric_id}"
-
-
-async def get_latest(metric, hours=DEFAULT_HOURS):
-    key = _get_key(metric)
+async def get_latest(metric_id, hours=DEFAULT_HOURS):
+    key = _get_range_key(metric_id)
     range_start = datetime.datetime.now() - datetime.timedelta(hours=hours)
 
     return await connection.zrangebyscore(
@@ -56,8 +61,8 @@ async def get_latest(metric, hours=DEFAULT_HOURS):
     )
 
 
-async def add_and_prune(metric, data_point, hours=DEFAULT_HOURS):
-    key = _get_key(metric)
+async def add_and_prune(metric_id, data_point, hours=DEFAULT_HOURS):
+    key = _get_range_key(metric_id)
     now = datetime.datetime.now()
     range_start = now - datetime.timedelta(hours=hours)
 
@@ -67,3 +72,35 @@ async def add_and_prune(metric, data_point, hours=DEFAULT_HOURS):
         result = await pipeline.execute()
 
     return result
+
+
+async def compute_stdev(metric_id):
+    current_data = await get_latest(metric_id)
+    sd = statistics.stdev([float(p[0]) for p in current_data])
+
+    return sd
+
+
+async def update_stdev(metric_id, stdev):
+    key = _get_stdevs_key()
+
+    return await connection.zadd(
+        key,
+        {metric_id: stdev},
+    )
+
+
+async def get_all_stdevs():
+    key = _get_stdevs_key()
+
+    return await connection.zrangebyscore(key, withscores=True)
+
+
+async def get_rank(metric_id):
+    all_stdevs = await get_all_stdevs()
+    rank = 0
+    for i, item in enumerate(all_stdevs):
+        rank = i + 1
+        if item == metric_id:
+            break
+    return rank
