@@ -14,7 +14,7 @@ async def get_metrics():
     """
     all_metrics = metrics.get_all_metrics()
     return [
-        models.Metric(
+        models.MetricMetadata(
             human_readable_name=metrics.get_readable_name(m),
             metric_id=metrics.get_metric_id(m),
         )

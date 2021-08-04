@@ -76,7 +76,10 @@ async def add_and_prune(metric_id, data_point, hours=DEFAULT_HOURS):
 
 async def compute_stdev(metric_id):
     current_data = await get_latest(metric_id)
-    sd = statistics.stdev([float(p[0]) for p in current_data])
+    try:
+        sd = statistics.stdev([float(p[0]) for p in current_data])
+    except statistics.StatisticsError:
+        return 0
 
     return sd
 
@@ -93,14 +96,15 @@ async def update_stdev(metric_id, stdev):
 async def get_all_stdevs():
     key = _get_stdevs_key()
 
-    return await connection.zrangebyscore(key, withscores=True)
+    return await connection.zrangebyscore(key, min="-inf", max="+inf", withscores=True)
 
 
 async def get_rank(metric_id):
     all_stdevs = await get_all_stdevs()
-    rank = 0
+    rank = -1
     for i, item in enumerate(all_stdevs):
-        rank = i + 1
-        if item == metric_id:
+        item_id = item[0]
+        if item_id == metric_id.encode("utf-8"):
+            rank = i + 1
             break
     return rank

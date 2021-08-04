@@ -1,11 +1,10 @@
 import asyncio
 import datetime
-import statistics
 
 from datatracker.v1.data import crypto_prices
 from datatracker.v1.data import metrics
 
-SECONDS_DELAY = 5
+SECONDS_DELAY = 60  # 1 minute
 
 
 def run():
