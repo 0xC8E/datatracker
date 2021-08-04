@@ -3,17 +3,22 @@ import datetime
 
 import aioredis
 
-REDIS_URL = "redis://localhost/1"
+REDIS_URL = "redis://localhost/"
+MAIN_DB = 1
+TEST_DB = 2
 
 RANGE_KEY = "dt:datapoints"
 
 DEFAULT_HOURS = 24
 
 
-connection = aioredis.from_url(REDIS_URL)
+connection = aioredis.from_url(REDIS_URL, db=MAIN_DB)
 
 
-async def clear():
+async def connect_for_testing_and_clear():
+    print("Warning - Using test database in current process.")
+    global connection
+    connection = aioredis.from_url(REDIS_URL, db=TEST_DB)
     await connection.delete(RANGE_KEY)
 
 

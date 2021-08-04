@@ -29,7 +29,7 @@ def pytest_sessionfinish(*_):
 
 
 async def test_main_flow_single_item(event_loop):
-    await datapoints.clear()
+    await datapoints.connect_for_testing_and_clear()
     expected_value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
         expected_score = datetime.datetime.now().timestamp()
@@ -43,7 +43,7 @@ async def test_main_flow_single_item(event_loop):
 
 
 async def test_prune_to_last_24h(event_loop):
-    await datapoints.clear()
+    await datapoints.connect_for_testing_and_clear()
     value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
         await datapoints.add_and_prune(value)
@@ -57,7 +57,7 @@ async def test_prune_to_last_24h(event_loop):
 
 
 async def test_get_only_last_24h(event_loop):
-    await datapoints.clear()
+    await datapoints.connect_for_testing_and_clear()
     old_value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
         await datapoints.add_and_prune(old_value)
