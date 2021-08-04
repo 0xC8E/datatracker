@@ -1,4 +1,3 @@
-import decimal
 import typing
 
 import pydantic
@@ -10,5 +9,5 @@ class MetricMetadata(pydantic.BaseModel):
 
 
 class Metric(pydantic.BaseModel):
-    values: typing.List[decimal.Decimal]
-    rank: decimal.Decimal
+    values: typing.List[float]
+    rank: float

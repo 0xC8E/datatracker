@@ -27,4 +27,7 @@ async def get_metric(metric_id):
     """
     Retrieve details related to a specific metric in the system.
     """
-    return metrics.get_all_metrics()
+    data_points = await metrics.get_latest(metric_id)
+    rank = await metrics.get_rank(metric_id)
+    response = models.Metric(values=[float(dp[0]) for dp in data_points], rank=rank)
+    return response
