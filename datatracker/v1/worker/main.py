@@ -1,40 +1,29 @@
 import asyncio
-import httpx
 import datetime
 
+from datatracker.v1.data import crypto_prices
+from datatracker.v1.data import datapoints
 
-SECONDS_DELAY = 10
+SECONDS_DELAY = 60
 
 
 def run():
-    loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(main_loop())
+        asyncio.run(main_loop())
     except KeyboardInterrupt:
         print("Got kill signal; stopping.")
 
 
 async def main_loop():
-    while True:
-        print(f"Starting at {datetime.datetime.now()}")
-        await asyncio.sleep(SECONDS_DELAY)
-        asyncio.create_task(fetch_and_store_stats())
+    print(f"Fetching and storing price at {datetime.datetime.now()}")
+    asyncio.create_task(fetch_and_store_price())
+    await asyncio.sleep(SECONDS_DELAY)
+    await main_loop()
 
 
-async def fetch_and_store_stats():
-    await asyncio.sleep(1)
-    stats = await fetch_stats()
-    await store(stats)
-
-
-async def fetch_stats():
-    async with httpx.AsyncClient() as client:
-        result = await client.get("https://www.example.com/")
-        return result
-
-
-async def store(stats):
-    print(f"Storing at {datetime.datetime.now()}.")
+async def fetch_and_store_price():
+    price = await crypto_prices.get_current_price()
+    await datapoints.add_and_prune(price)
 
 
 if __name__ == "__main__":
