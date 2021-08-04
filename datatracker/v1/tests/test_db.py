@@ -3,7 +3,9 @@ import datetime
 import freezegun
 import pytest
 
-from datatracker.v1.data import datapoints
+from datatracker.v1.data import metrics
+
+METRIC = ("Test", "test")
 
 
 # This marks all tests as async
@@ -29,12 +31,12 @@ def pytest_sessionfinish(*_):
 
 
 async def test_main_flow_single_item(event_loop):
-    await datapoints.connect_for_testing_and_clear()
+    await metrics.connect_for_testing_and_clear()
     expected_value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
         expected_score = datetime.datetime.now().timestamp()
-        await datapoints.add_and_prune(expected_value)
-        points = await datapoints.get_latest()
+        await metrics.add_and_prune(METRIC, expected_value)
+        points = await metrics.get_latest(METRIC)
 
     retrieved_value, retrieved_score = points[0]
 
@@ -43,30 +45,30 @@ async def test_main_flow_single_item(event_loop):
 
 
 async def test_prune_to_last_24h(event_loop):
-    await datapoints.connect_for_testing_and_clear()
+    await metrics.connect_for_testing_and_clear()
     value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
-        await datapoints.add_and_prune(value)
+        await metrics.add_and_prune(METRIC, value)
 
     # Note that this is exactly one second after 24h (to make sure it's outside the 24h range)
     with freezegun.freeze_time("2021-08-04 00:00:01"):
-        await datapoints.add_and_prune(value)
-        points = await datapoints.get_latest()
+        await metrics.add_and_prune(METRIC, value)
+        points = await metrics.get_latest(METRIC)
 
     assert len(points) == 1
 
 
 async def test_get_only_last_24h(event_loop):
-    await datapoints.connect_for_testing_and_clear()
+    await metrics.connect_for_testing_and_clear()
     old_value = bytes(1)
     with freezegun.freeze_time("2021-08-03 00:00:00"):
-        await datapoints.add_and_prune(old_value)
+        await metrics.add_and_prune(METRIC, old_value)
 
     new_value = bytes(2)
     # Note that this is exactly one second after 24h (to make sure it's outside the 24h range)
     with freezegun.freeze_time("2021-08-04 00:00:01"):
-        await datapoints.add_and_prune(new_value)
-        points = await datapoints.get_latest()
+        await metrics.add_and_prune(METRIC, new_value)
+        points = await metrics.get_latest(METRIC)
 
     assert len(points) == 1
     retrieved_value, _ = points[0]
